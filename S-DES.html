@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DES</title>
+</head>
+<body>
+    <div>
+        <button id="jiami">加密</button>
+        <button id="jiemi">解密</button>
+    </div>
+    <div>
+        <label>密钥输入
+            <input type="text" name="key" id="key" value="1010000010">
+        </label>
+        
+    </div>
+    <label>输入<br><textarea name="shuru" id="shuru" cols="30" rows="10"></textarea></label>
+    <br>
+    <label>输出<br><textarea name="shuchu" id="shuchu" cols="30" rows="10"></textarea></label>
+</body>
+<script>
+    //这里是des加密算法实现
+
+    //拿到密钥
+    // const key=document.querySelector('#key').value
+    // console.log(document.querySelector('#jiami'))
+    //拿到输入
+    // const shuru=document.querySelector('#shuru').value
+
+    //输出
+    // const shuchu=document.querySelector('#shuchu').value
+
+    //初始置换(IP)
+    function IP(shuru) {
+        //可以自己定义置换数组
+        const ipTable = [2, 6, 3, 1, 4, 8, 5, 7]
+        let output = ""
+        for (let i = 0; i < ipTable.length; i++) {
+            output += shuru[ipTable[i] - 1]
+        }
+        return output
+    }
+    //IP的逆(最终置换)
+    function IP_1(input) {
+        const ipInverseTable = [4,1,3,5,7,2,8,6];
+        let output = "";
+
+        for (let i = 0; i < ipInverseTable.length; i++) {
+            output += input[ipInverseTable[i] - 1];
+        }
+
+        return output;
+    }
+
+
+    // 左循环移位函数shift,n代表左移几位
+    function leftShift(str, n) {
+        return str.slice(n) + str.slice(0, n);
+    }
+
+    //10bit密钥置换
+    function ipkey(key){
+        // 初始置换IP10,可以自己调整
+        const ip10 = [3, 5, 2, 7, 4, 10, 1, 9, 8, 6]
+        let permutedKey = ""
+        for (let i = 0; i < ip10.length; i++) {
+        permutedKey += key[ip10[i] - 1]
+        }
+
+        // 分割成两个5位子密钥
+        const leftHalf = permutedKey.slice(0, 5)
+        const rightHalf = permutedKey.slice(5, 10)
+
+         // 循环左移一位
+        const leftShifted = leftShift(leftHalf, 1)
+        const rightShifted = leftShift(rightHalf, 1)
+
+        // 合并并进行P8置换
+        const combinedKey = leftShifted + rightShifted;
+        const p8 = [6, 3, 7, 4, 8, 5, 10, 9]
+        let subKey = ""
+        for (let i = 0; i < p8.length; i++) {
+            subKey += combinedKey[p8[i] - 1]
+        }
+
+        return subKey
+    }
+
+    //拿到子密钥1
+    //const subKey1 = generateSubKeys(key)
+    //拿到子密钥2
+    //const subKey2 = generateSubKeys(leftShift(key, 2))
+
+
+    //下面就是DES函数实现
+    //需求一:扩展左右的文本,异或密钥得到的结果的左右要在s-boxs中相对应的得到结果(结果一共4bit)
+    //直接置换(上面的结果)
+
+    //1.扩展置换左右文本(明文/密文)
+    function kuozhanzhihuan(shuru){
+        //可以自己定义的数组
+        const epTable = [4, 1, 2, 3, 2, 3, 4, 1]
+        let output = ""
+
+        for (let i = 0; i < epTable.length; i++) {
+            output += shuru[epTable[i] - 1]
+        }
+
+        return output;
+    }
+
+    //2.s-box的函数,获得对应的替换
+    const sBox0 = [
+    ["01", "00", "11", "10"],
+    ["11", "10", "01", "00"],
+    ["00", "10", "01", "11"],
+    ["11", "01", "00", "10"]
+    ]
+
+    const sBox1 = [
+    ["00", "01", "10", "11"],
+    ["10", "11", "01", "00"],
+    ["11", "00", "01", "00"],
+    ["10", "01", "00", "11"]
+    ]
+
+    function s_box(input,sBox){
+        // //盒子
+        // const sBoxes = [
+        // ["01", "00", "11", "10"],
+        // ["11", "10", "01", "00"],
+        // ["00", "10", "01", "11"],
+        // ["11", "01", "11", "10"]
+        // ]
+
+        const row = parseInt(input[0] + input[3], 2)
+        const col = parseInt(input[1] + input[2], 2)
+
+        return sBox[row][col];
+    }
+
+    //3.直接置换
+    function zhijiezhihuan(input){
+        const p4Table = [2, 4, 3, 1]
+        let output = ""
+        for (let i = 0; i < p4Table.length; i++) {
+            output += input[p4Table[i] - 1]
+        }
+
+        return output
+    }
+    function zhijiezhihuan2(input){
+        const p4Table = [4,1,3,2]
+        let output = ""
+        for (let i = 0; i < p4Table.length; i++) {
+            output += input[p4Table[i] - 1]
+        }
+
+        return output
+    }
+
+    //下面实现的是异或,互换SW
+    // 1.异或
+    function yihuo(input1, input2){
+        let output = ""
+        for (let i = 0; i < input1.length; i++) {
+            output += input1[i] === input2[i] ? "0" : "1"
+        }
+        return output
+    }
+    //2.左右互换
+    function SWhuhuan(input1,input2){
+        let output = ""
+        output+=input2+input1
+        return output
+    }
+    // console.log(SWhuhuan('1000','0101'));
+
+    //这里是得到左右的文本
+    //1.左:
+    function getleft(input){
+        let output=""
+        for(let i=0;i<4;i++){
+            output+=input[i]
+        }
+        return output
+    }
+    //2.右
+    function getright(input){
+        let output=""
+        for(let i=4;i<8;i++){
+            output+=input[i]
+        }
+        return output
+    }
+
+    // const sas='10001000'
+    // console.log(IP(IP_1(sas)))
+    // console.log(yihuo('10001000','01101100'));
+
+    //加密:在点击机密按钮后就会提取密钥以及输入的内容进行加密,得到的结果在输出中
+    document.querySelector('#jiami').addEventListener('click',function(){
+        //1.拿到密钥以及,明文
+        // console.log(document.querySelector('#shuru').value);
+        let key=document.querySelector('#key').value
+        let input=document.querySelector('#shuru').value
+
+        //2.处理密钥
+        const subKey1 = ipkey(key)//密钥一
+        const subKey2 = ipkey(leftShift(key, 2))//密钥二
+
+        // console.log(subKey1,subKey2);
+
+        //3.初始置换
+        input=IP(input)
+
+        let inputl=getleft(input)
+        let inputr=getright(input)
+
+        
+
+        //des函数:先2再1
+        //des函数的内容是先不管右边的,先管左边再成功后交换左右就用第二个密钥进行函数计算就可以的到密文前的文本
+        //4.处理右边的inputl,扩展置换
+        let temp=kuozhanzhihuan(inputr)
+        //和密钥一进行异或
+        temp=yihuo(temp,subKey1)
+        //得到两边
+        temp1=getleft(temp)
+        temp2=getright(temp)
+        //左边是box0,右边是box1
+        temp1=s_box(temp1,sBox0)
+        temp2=s_box(temp2,sBox1)
+
+        //合并
+        temp=temp1+temp2
+        // console.log(temp);
+        //直接置换
+        temp=zhijiezhihuan(temp)
+        //直接置换的结果和左边的输入进行异或得到左边的文本
+        inputl=yihuo(inputl,temp)
+        // console.log(inputl);
+        //SW置换
+        input=SWhuhuan(inputl,inputr)
+        
+        
+        //在进行上面的步骤就是子密钥换一个
+        inputl=getleft(input)
+        inputr=getright(input)
+        temp=kuozhanzhihuan(inputr)
+        temp=yihuo(temp,subKey2)
+        //得到两边
+        temp1=getleft(temp)
+        temp2=getright(temp)
+        //左边是box0,右边是box1
+        temp1=s_box(temp1,sBox0)
+        temp2=s_box(temp2,sBox1)
+
+        //合并
+        temp=temp1+temp2
+        
+        //直接置换
+        temp=zhijiezhihuan(temp)
+        //直接置换的结果和左边的输入进行异或得到左边的文本
+        inputl=yihuo(inputl,temp)
+        input=inputl+inputr
+        // console.log(input);
+
+
+        //最后一步:ip的逆
+        input=IP_1(input)
+
+        // console.log(input);
+        //输出
+        document.querySelector('#shuchu').innerHTML=input
+
+
+    })
+
+    //解密:
+    document.querySelector('#jiemi').addEventListener('click',function(){
+        let key=document.querySelector('#key').value
+        let input=document.querySelector('#shuru').value
+
+        //2.处理密钥
+        const subKey1 = ipkey(key)//密钥一
+        const subKey2 = ipkey(leftShift(key, 2))//密钥二
+
+        input=IP(input)
+
+        let inputl=getleft(input)
+        let inputr=getright(input)
+
+        //右边扩展置换
+        let temp=kuozhanzhihuan(inputr)
+        //异或钥匙2
+        temp=yihuo(temp,subKey2)
+        
+        //异或完下面是进入box中
+        //得到两边
+        let temp1=getleft(temp)
+        let temp2=getright(temp)
+        //左边是box0,右边是box1
+        temp1=s_box(temp1,sBox0)
+        temp2=s_box(temp2,sBox1)
+        temp=temp1+temp2
+        
+        //接下来是直接置换
+        temp=zhijiezhihuan(temp)
+        
+        //直接置换后是和左边异或,得到左边
+        inputl=yihuo(temp,inputl)
+        
+
+        //SW置换接着解密
+        input=SWhuhuan(inputl,inputr)
+        
+
+        //最后一次解密
+        inputl=getleft(input)
+        inputr=getright(input)
+        temp=kuozhanzhihuan(inputr)
+        temp=yihuo(temp,subKey1)
+        temp1=getleft(temp)
+        temp2=getright(temp)
+        temp1=s_box(temp1,sBox0)
+        temp2=s_box(temp2,sBox1)
+        temp=temp1+temp2
+        temp=zhijiezhihuan(temp)
+        inputl=yihuo(temp,inputl)
+        
+        input=inputl+inputr
+
+        input=IP_1(input)
+
+        document.querySelector('#shuchu').innerHTML=input
+    })
+
+</script>
+</html>
